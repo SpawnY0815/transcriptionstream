@@ -1,0 +1,79 @@
+version: '3.8'
+# transcription stream startup
+#
+# make sure the volumes exist
+services:
+  init:
+    image: busybox
+    volumes:
+      - ${TRANSCRIPTION_PATH}:/transcriptionstream
+    command: /bin/sh -c "mkdir -p /transcriptionstream/incoming /transcriptionstream/transcribed"
+
+
+# Start up the worker container
+  ts_transcription_service:
+    image: ts-gpu
+    container_name: ts-gpu
+    shm_size: 6gb
+    # ports:
+    #   - "22222:22"
+    volumes:
+      - ${TRANSCRIPTION_PATH}:/transcriptionstream
+      - ${TRANSCRIPTION_PATH}:/home/transcriptionstream
+    networks:
+      ts_private_network:
+        ipv4_address: 172.28.1.5
+
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+# # Start up the web front end
+#   ts_web_service:
+#     image: ts-web
+#     container_name: ts-web
+#     ports:
+#       - "5006:5000"
+#     volumes:
+#       - ${TRANSCRIPTION_PATH}:/transcriptionstream
+#     networks:
+#       ts_private_network:
+#         ipv4_address: 172.28.1.2
+
+# if you want to run ollama locally and have enough vram uncomment this section
+#  # Startup ts-gpt
+#  ts_gpt_service:
+#    image: ollama/ollama
+#    container_name: ts-gpt
+#    ports:
+#      - "11434:11434"
+#    volumes:
+#      - ${TRANSCRIPTION_PATH}:/root/.ollama
+#    networks:
+#      ts_private_network:
+#        ipv4_address: 172.28.1.3
+#
+#    deploy:
+#      resources:
+#        reservations:
+#          devices:
+#            - driver: nvidia
+#              count: 1
+#              capabilities: [gpu]
+
+
+networks:
+  ts_private_network:
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
+
+
+
+volumes:
+  transcriptionstream:
+    external: true

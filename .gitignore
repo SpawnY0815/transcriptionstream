@@ -1,0 +1,4 @@
+.DS_Store
+.env
+ts-gpt_prompt.txt
+*.code-workspace
